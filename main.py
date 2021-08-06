@@ -65,19 +65,18 @@ def main():
 
     filepath = Path(args.filepath).resolve()
     if filepath.is_dir():
-        files_to_upload = [f for f in os.listdir(filepath) if f.endswith('.mp4')]
-        files_to_upload = list(map(lambda p: f'{filepath}\\{p}', files_to_upload))
+        files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith('.mp4')]
+        files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
     else:
         files_to_upload = [filepath]
-    files_to_upload = [files_to_upload[i:i + NUM_THREADS] for i in range(0, len(files_to_upload), NUM_THREADS)]
+    # files_to_upload = [files_to_upload[i:i + NUM_THREADS] for i in range(0, len(files_to_upload), NUM_THREADS)]
 
-    for file in tqdm(files_to_upload, leave=True):
-        file = str(file)
+    for file in tqdm(files_to_upload, leave=False):
         res = requests.post(
             f'{BASE_URL}/gfycats',
             headers={**AUTH_HEADERS, 'Content-Type': 'application/json'},
             data=json.dumps({
-                'title': file.split('\\')[-1],
+                'title': file.name,
                 'tags': args.tags,
                 'nsfw': False,
                 'keepAudio': True,
@@ -85,8 +84,7 @@ def main():
             }),
         )
         metadata = res.json()
-        new_file = '\\'.join(file.split('\\')[:-1])
-        new_file = f'{new_file}\\{metadata["gfyname"]}'
+        new_file = file.parent / metadata['gfyname']
         shutil.copy2(file, new_file)
 
         with open(new_file, 'rb') as f:
