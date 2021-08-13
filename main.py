@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import requests
+from multiprocessing import Pool, cpu_count
 from requests_toolbelt import MultipartEncoder
 from time import sleep
 from pathlib import Path
@@ -14,7 +15,7 @@ load_dotenv()
 BASE_URL = 'https://api.gfycat.com/v1'
 CLIENT_ID = os.environ.get('CLIENT_ID')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-NUM_THREADS = int(os.environ.get('NUM_THREADS'))
+NUM_THREADS = cpu_count()
 USER_NAME = os.environ.get('USER_NAME')
 USER_PASSWORD = os.environ.get('USER_PASSWORD')
 
@@ -24,6 +25,7 @@ class GfycatMassUploader:
         with open('./credentials.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
+        self.args = None
 
     def token_is_valid(self):
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
@@ -47,6 +49,50 @@ class GfycatMassUploader:
             json.dump(credentials, f, indent=2)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
 
+    def file_upload(self, file):
+        if not self.token_is_valid():
+            self.get_token()
+        res = requests.post(
+            f'{BASE_URL}/gfycats',
+            headers={**self.auth_headers, 'Content-Type': 'application/json'},
+            data=json.dumps({
+                'title': file.name,
+                'tags': self.args.tags,
+                'nsfw': False,
+                'keepAudio': True,
+                'private': False,
+            }),
+        )
+        metadata = res.json()
+        new_file = file.parent / metadata['gfyname']
+        shutil.copy2(file, new_file)
+
+        with open(new_file, 'rb') as f:
+            m = MultipartEncoder(fields={
+                'key': metadata['gfyname'],
+                'file': (metadata['gfyname'], f, 'video/mp4')
+            })
+            res = requests.post(
+                'https://filedrop.gfycat.com',
+                data=m,
+                headers={'Content-Type': m.content_type},
+            )
+        if res.status_code >= 400:
+            os.remove(new_file)
+            print(res.status_code)
+            return res.status_code
+
+        while True:
+            res = requests.get(f'{BASE_URL}/gfycats/fetch/status/{metadata["gfyname"]}')
+            status = res.json()
+            if status['task'].lower() in ['notfoundo', 'encoding']:
+                sleep(3)
+                continue
+            os.remove(new_file)
+            print(status)
+            break
+        return status
+
     def main(self):
         parser = ArgumentParser()
         parser.add_argument('-f', '--filepath', type=str)
@@ -54,6 +100,7 @@ class GfycatMassUploader:
         args = parser.parse_args()
         if args.tags is not None:
             args.tags = args.tags.replace(', ', ',').split(',')
+        self.args = args
 
         if not self.token_is_valid():
             self.get_token()
@@ -69,50 +116,11 @@ class GfycatMassUploader:
             files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
         else:
             files_to_upload = [filepath]
-        # files_to_upload = [files_to_upload[i:i + NUM_THREADS] for i in range(0, len(files_to_upload), NUM_THREADS)]
 
-        for file in tqdm(files_to_upload, leave=False):
-            if not self.token_is_valid():
-                self.get_token()
-            res = requests.post(
-                f'{BASE_URL}/gfycats',
-                headers={**self.auth_headers, 'Content-Type': 'application/json'},
-                data=json.dumps({
-                    'title': file.name,
-                    'tags': args.tags,
-                    'nsfw': False,
-                    'keepAudio': True,
-                    'private': False,
-                }),
-            )
-            metadata = res.json()
-            new_file = file.parent / metadata['gfyname']
-            shutil.copy2(file, new_file)
-
-            with open(new_file, 'rb') as f:
-                m = MultipartEncoder(fields={
-                    'key': metadata['gfyname'],
-                    'file': (metadata['gfyname'], f, 'video/mp4')
-                })
-                res = requests.post(
-                    'https://filedrop.gfycat.com',
-                    data=m,
-                    headers={'Content-Type': m.content_type},
-                )
-            if res.status_code >= 400:
-                os.remove(new_file)
-                print(res.status_code)
-                return res.status_code
-
-            while True:
-                res = requests.get(f'{BASE_URL}/gfycats/fetch/status/{metadata["gfyname"]}')
-                status = res.json()
-                if status['task'].lower() in ['notfoundo', 'encoding']:
-                    sleep(3)
-                    continue
-                os.remove(new_file)
-                print(status)
-                break
+        with Pool(NUM_THREADS) as pool:
+            with tqdm(total=len(files_to_upload)) as pbar:
+                for i, _ in pool.imap_unordered(self.file_upload, files_to_upload):
+                    pbar.update()
 
 
 if __name__ == '__main__':
