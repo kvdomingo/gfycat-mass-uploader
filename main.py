@@ -41,7 +41,14 @@ class GfycatMassUploader:
             'username': USER_NAME,
             'password': USER_PASSWORD,
         }
-        res = requests.post(f'{BASE_URL}/oauth/token', data=payload, headers={'Content-Type': 'application/json'})
+        res = requests.post(
+            f'{BASE_URL}/oauth/token',
+            data=json.dumps(payload),
+            headers={
+                'Accept': '*/*',
+                'Content-Type': 'application/json'
+            },
+        )
         if res.status_code != 200:
             raise Exception(f'Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}')
         credentials = res.json()
@@ -89,7 +96,6 @@ class GfycatMassUploader:
                 sleep(3)
                 continue
             os.remove(new_file)
-            print(status)
             break
         return status
 
