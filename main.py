@@ -56,7 +56,7 @@ class GfycatMassUploader:
             json.dump(credentials, f, indent=2)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
 
-    def file_upload(self, file):
+    def file_upload(self, file: Path):
         if not self.token_is_valid():
             self.get_token()
         res = requests.post(
