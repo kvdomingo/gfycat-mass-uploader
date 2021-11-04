@@ -21,19 +21,51 @@ USER_PASSWORD = os.environ.get('USER_PASSWORD')
 
 
 class GfycatMassUploader:
-    def __init__(self):
+    def __init__(self) -> None:
+        if 'credentials.json' not in os.listdir():
+            self.get_token()
         with open('./credentials.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
-        self.args = None
+        self.files_to_upload = []
 
-    def token_is_valid(self):
+        parser = ArgumentParser()
+        parser.add_argument('-f', '--filepath', type=str, default='.')
+        parser.add_argument('-t', '--tags', type=str)
+        args = parser.parse_args()
+        if args.tags is not None:
+            args.tags = args.tags.replace(', ', ',').split(',')
+        self.args = args
+
+        try:
+            self.check_valid_files()
+            self.main()
+        except Exception as e:
+            print(f'{e}\n')
+        finally:
+            self.cleanup()
+
+    def check_valid_files(self) -> None:
+        filepath = Path(self.args.filepath).resolve()
+        if filepath.is_dir():
+            files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith('.mp4')]
+            files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
+        else:
+            files_to_upload = [filepath]
+
+        if len(files_to_upload) == 0:
+            raise FileNotFoundError(f'No valid files found in {str(filepath)}')
+        self.files_to_upload = files_to_upload
+
+    def cleanup(self) -> None:
+        if 'credentials.json' in os.listdir():
+            os.remove('credentials.json')
+
+    def token_is_valid(self) -> bool:
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
-        if res.status_code != 200:
-            return False
-        return True
+        return res.status_code == 200
 
-    def get_token(self):
+    def get_token(self) -> None:
         payload = {
             'grant_type': 'password',
             'client_id': CLIENT_ID,
@@ -52,11 +84,11 @@ class GfycatMassUploader:
         if res.status_code != 200:
             raise Exception(f'Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}')
         credentials = res.json()
-        with open('./credentials.json', 'w') as f:
+        with open('./credentials.json', 'w+') as f:
             json.dump(credentials, f, indent=2)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
 
-    def file_upload(self, file: Path):
+    def file_upload(self, file: Path) -> int:
         if not self.token_is_valid():
             self.get_token()
         res = requests.post(
@@ -99,29 +131,15 @@ class GfycatMassUploader:
             break
         return status
 
-    def main(self):
-        parser = ArgumentParser()
-        parser.add_argument('-f', '--filepath', type=str)
-        parser.add_argument('-t', '--tags', type=str)
-        args = parser.parse_args()
-        if args.tags is not None:
-            args.tags = args.tags.replace(', ', ',').split(',')
-        self.args = args
-
+    def main(self) -> None:
+        files_to_upload = self.files_to_upload
         if not self.token_is_valid():
             self.get_token()
 
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
         if res.status_code >= 400:
             print(res.status_code)
-            return res.status_code
-
-        filepath = Path(args.filepath).resolve()
-        if filepath.is_dir():
-            files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith('.mp4')]
-            files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
-        else:
-            files_to_upload = [filepath]
+            return
 
         with Pool(NUM_THREADS) as pool:
             with tqdm(total=len(files_to_upload)) as pbar:
@@ -130,4 +148,4 @@ class GfycatMassUploader:
 
 
 if __name__ == '__main__':
-    GfycatMassUploader().main()
+    GfycatMassUploader()

@@ -1,3 +1,4 @@
+pyinstaller
 python-dotenv
 requests
 requests-toolbelt
