@@ -24,7 +24,7 @@ class GfycatMassUploader:
     def __init__(self) -> None:
         if 'credentials.json' not in os.listdir():
             self.get_token()
-        with open('./credentials.json', 'r', encoding='utf-8') as f:
+        with open('./gfycat/credentials.json', 'r', encoding='utf-8') as f:
             credentials = json.load(f)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
         self.files_to_upload = []
@@ -58,8 +58,8 @@ class GfycatMassUploader:
         self.files_to_upload = files_to_upload
 
     def cleanup(self) -> None:
-        if 'credentials.json' in os.listdir():
-            os.remove('credentials.json')
+        if 'credentials.json' in os.listdir('./gfycat'):
+            os.remove('./gfycat/credentials.json')
 
     def token_is_valid(self) -> bool:
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
@@ -84,7 +84,7 @@ class GfycatMassUploader:
         if res.status_code != 200:
             raise Exception(f'Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}')
         credentials = res.json()
-        with open('./credentials.json', 'w+') as f:
+        with open('./gfycat/credentials.json', 'w+') as f:
             json.dump(credentials, f, indent=2)
         self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
 
