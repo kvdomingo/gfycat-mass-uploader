@@ -12,13 +12,10 @@ manual tagging dozens of GIFs!)
 Windows binaries are available through
 [releases](https://github.com/kvdomingo/gfycat-mass-uploader/releases).
 
-## Building from source
+## Running as script
 1. Clone the repository.
 2. Create a `virtualenv` and install deps from `requirements.txt`
-3. Build executable using:
+3. Use like a normal script using:
 ```cmd
-pyinstaller -F -n gfycat-mass-uploader main.py
+python main.py -f <path to file or directory> -t "<tags, comma-separated>"
 ```
-4. A new folder `dist` will be created with the exec inside.
-Copy/move this file somewhere on your `PATH` to be able to use
-it from any location.
