@@ -1,41 +1,44 @@
 import os
+import sys
 import json
 import shutil
 import requests
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, freeze_support
 from requests_toolbelt import MultipartEncoder
 from time import sleep
 from pathlib import Path
 from argparse import ArgumentParser
-from dotenv import load_dotenv
+from getpass import getpass
 from tqdm import tqdm
 
-load_dotenv()
 
-BASE_URL = 'https://api.gfycat.com/v1'
-CLIENT_ID = os.environ.get('CLIENT_ID')
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
 NUM_THREADS = cpu_count()
-USER_NAME = os.environ.get('USER_NAME')
-USER_PASSWORD = os.environ.get('USER_PASSWORD')
+BASE_URL = 'https://api.gfycat.com/v1'
 
 
 class GfycatMassUploader:
     def __init__(self) -> None:
-        if 'credentials.json' not in os.listdir():
-            self.get_token()
-        with open('./gfycat/credentials.json', 'r', encoding='utf-8') as f:
-            credentials = json.load(f)
-        self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
+        self.HOME = Path.home()
+        if '.gfymuconfig' not in os.listdir(self.HOME):
+            self.setup()
+        else:
+            with open(self.HOME / '.gfymuconfig', 'r') as f:
+                self.config = json.load(f)
+
+        self.credentials = {}
+        self.auth_headers = {}
         self.files_to_upload = []
 
         parser = ArgumentParser()
         parser.add_argument('-f', '--filepath', type=str, default='.')
         parser.add_argument('-t', '--tags', type=str)
+        parser.add_argument('--configure', action='store_true')
         args = parser.parse_args()
         if args.tags is not None:
             args.tags = args.tags.replace(', ', ',').split(',')
         self.args = args
+        if args.configure:
+            self.setup()
 
         try:
             self.check_valid_files()
@@ -44,6 +47,18 @@ class GfycatMassUploader:
             print(f'{e}\n')
         finally:
             self.cleanup()
+
+    def setup(self) -> None:
+        print('Gfycat Mass Uploader first-time setup. Please provide the following:')
+        config = dict(
+            client_id=input('Gfycat API client ID: '),
+            client_secret=input('Gfycat API client secret: '),
+            username=input('Gfycat username: '),
+            password=getpass('Gfycat API password: '),
+        )
+        with open(self.HOME / '.gfymuconfig', 'w+', encoding='utf-8') as f:
+            json.dump(config, f, indent=2)
+        self.config = config
 
     def check_valid_files(self) -> None:
         filepath = Path(self.args.filepath).resolve()
@@ -58,21 +73,14 @@ class GfycatMassUploader:
         self.files_to_upload = files_to_upload
 
     def cleanup(self) -> None:
-        if 'credentials.json' in os.listdir('./gfycat'):
-            os.remove('./gfycat/credentials.json')
+        pass
 
     def token_is_valid(self) -> bool:
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
         return res.status_code == 200
 
     def get_token(self) -> None:
-        payload = {
-            'grant_type': 'password',
-            'client_id': CLIENT_ID,
-            'client_secret': CLIENT_SECRET,
-            'username': USER_NAME,
-            'password': USER_PASSWORD,
-        }
+        payload = {**self.config, 'grant_type': 'password'}
         res = requests.post(
             f'{BASE_URL}/oauth/token',
             data=json.dumps(payload),
@@ -83,10 +91,8 @@ class GfycatMassUploader:
         )
         if res.status_code != 200:
             raise Exception(f'Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}')
-        credentials = res.json()
-        with open('./gfycat/credentials.json', 'w+') as f:
-            json.dump(credentials, f, indent=2)
-        self.auth_headers = {'Authorization': f'Bearer {credentials["access_token"]}'}
+        self.credentials = res.json()
+        self.auth_headers = {'Authorization': f'Bearer {self.credentials["access_token"]}'}
 
     def file_upload(self, file: Path) -> int:
         if not self.token_is_valid():
@@ -148,4 +154,6 @@ class GfycatMassUploader:
 
 
 if __name__ == '__main__':
+    if sys.platform.startswith('win'):
+        freeze_support()
     GfycatMassUploader()

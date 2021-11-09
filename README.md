@@ -13,18 +13,19 @@ manual tagging dozens of GIFs!)
 - Gfycat API client ID & secret
 
 ## Using as executable
-1. Download the Windows zip through
+1. Download the Windows binary through
 [releases](https://github.com/kvdomingo/gfycat-mass-uploader/releases).
-2. Unzip the contents to a location on your `PATH` to be able to run it from
-anywhere.
-3. Create a new file named `.env` in the installation directory. 
-4. Copy the contents of `.env.example` in this repo and paste it into the
-`.env` file you created. Fill in the fields with the needed information.
-5. Open a terminal in the directory which contains the files you want to
-upload and run:
+2. Place the executable in a location on your `PATH` to be able to run it from
+anywhere. 
+3. Open a terminal and run:
 ```cmd
-gfycat-mass-upload -t "<tags, comma-separated>"
+gfycat-mass-upload -f "<directory-containing-files-to-upload>" -t "<tags, comma-separated>"
 ```
+The `-f` parameter can be omitted if the files to be uploaded are in the 
+current directory.
+
+If you are running it for the first time, it will prompt you for the necessary
+config variables.
 
 ## Using as script
 1. Clone the repository.
