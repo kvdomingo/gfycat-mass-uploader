@@ -1,3 +1,5 @@
+![GitHub last commit](https://img.shields.io/github/last-commit/kvdomingo/gfycat-mass-uploader?style=for-the-badge)
+
 # Gfycat Mass Uploader
 
 A small utility to quickly upload all GIFs in a directory 
