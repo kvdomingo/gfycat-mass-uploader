@@ -79,7 +79,7 @@ class GfycatMassUploader:
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
         return res.status_code == 200
 
-    def get_token(self) -> None:
+    def get_access_token(self) -> None:
         payload = {**self.config, 'grant_type': 'password'}
         res = requests.post(
             f'{BASE_URL}/oauth/token',
@@ -94,9 +94,35 @@ class GfycatMassUploader:
         self.credentials = res.json()
         self.auth_headers = {'Authorization': f'Bearer {self.credentials["access_token"]}'}
 
+    def refresh_token(self) -> None:
+        payload = {
+            'grant_type': 'refresh',
+            'client_id': self.config['client_id'],
+            'client_secret': self.config['client_secret'],
+            'refresh_token': self.credentials['refresh_token'],
+        }
+        res = requests.post(
+            f'{BASE_URL}/oauth/token',
+            data=json.dumps(payload),
+            headers={
+                'Accept': '*/*',
+                'Content-Type': 'application/json',
+            },
+        )
+        if res.status_code != 200:
+            print(f'Error {res.status_code} when attempting to refresh token:\n{json.dumps(res.json(), indent=2)}')
+            print(f'\nAttempting to fetch new access token...')
+            self.get_access_token()
+        else:
+            self.credentials = res.json()
+            self.auth_headers = {'Authorization': f'Bearer {self.credentials["access_token"]}'}
+
     def file_upload(self, file: Path) -> int:
         if not self.token_is_valid():
-            self.get_token()
+            if self.credentials.get('refresh_token'):
+                self.refresh_token()
+            else:
+                self.get_access_token()
         res = requests.post(
             f'{BASE_URL}/gfycats',
             headers={**self.auth_headers, 'Content-Type': 'application/json'},
@@ -140,7 +166,10 @@ class GfycatMassUploader:
     def main(self) -> None:
         files_to_upload = self.files_to_upload
         if not self.token_is_valid():
-            self.get_token()
+            if self.credentials.get('refresh_token'):
+                self.refresh_token()
+            else:
+                self.get_access_token()
 
         res = requests.get(f'{BASE_URL}/me', headers=self.auth_headers)
         if res.status_code >= 400:
