@@ -10,6 +10,15 @@ def main() -> None:
     if sys.platform.startswith("win"):
         freeze_support()
 
+    print(
+        """
+    ===================================================
+    =============   Gfycat Mass Uploader   ============
+    ==========   v0.3 (01a43c, 22 Jan 2022)   =========
+    ===================================================
+    """
+    )
+
     parser = ArgumentParser()
     parser.add_argument("--configure", action="store_true", help="Re-run first-time setup.")
     parser.add_argument("-t", "--tags", type=str, help="Tags to apply to the GIFs.")
