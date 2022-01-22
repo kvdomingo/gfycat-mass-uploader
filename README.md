@@ -21,10 +21,12 @@ manual tagging dozens of GIFs!)
 anywhere. 
 3. Open a terminal and run:
 ```cmd
-gfycat-mass-upload -f "<directory-containing-files-to-upload>" -t "<tags, comma-separated>"
+gfycat-mass-upload -t "<tags, comma-separated>" "<path-to-file-or-directory>"
 ```
-The `-f` parameter can be omitted if the files to be uploaded are in the 
-current directory.
+The script will automatically determine if the provided path is a file or a
+directory. In the latter case, all valid files in the directory will be
+uploaded. The path can be omitted if you want all valid files in the current
+directory to be uploaded.
 
 If you are running it for the first time, it will prompt you for the necessary
 config variables.
@@ -36,5 +38,5 @@ config variables.
 in the fields with the needed information.
 4. Run using:
 ```cmd
-python main.py -f <path to file or directory> -t "<tags, comma-separated>"
+python main.py -t "<tags, comma-separated>" <path to file or directory>
 ```
