@@ -15,7 +15,7 @@ manual tagging dozens of GIFs!)
 - Gfycat API client ID & secret
 
 ## Using as executable
-1. Download the Windows binary through
+1. Download the Windows/Linux binaries through
 [releases](https://github.com/kvdomingo/gfycat-mass-uploader/releases).
 2. Place the executable in a location on your `PATH` to be able to run it from
 anywhere. 
@@ -33,10 +33,21 @@ config variables.
 
 ## Using as script
 1. Clone the repository.
-2. Create a `virtualenv` and install deps from `requirements.txt`
-3. Copy the contents of `.env.example` into a new file `.env` and fill
-in the fields with the needed information.
-4. Run using:
+2. Create a `virtualenv` and install deps:
+```shell
+pip install -r requirements.txt
+```
+3. Run using:
 ```cmd
 python main.py -t "<tags, comma-separated>" <path to file or directory>
+```
+
+## Building from source
+1. Install dev dependencies:
+```shell
+pip install -r requirements.dev.txt
+```
+2. Run:
+```shell
+pyinstaller --clean -F --name gfycat-mass-upload main.py
 ```

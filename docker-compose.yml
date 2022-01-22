@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  make-linux:
+    build: .
+    image: kvdomingo/gfymu-make-linux
+    volumes:
+      - .:/gfymu
