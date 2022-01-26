@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import requests
+from loguru import logger
 from multiprocessing import Pool, cpu_count
 from requests_toolbelt import MultipartEncoder
 from time import sleep
@@ -14,10 +15,11 @@ BASE_URL = "https://api.gfycat.com/v1"
 
 
 class GfycatMassUploader:
-    def __init__(self, filepath: Path, tags: list[str]) -> None:
+    def __init__(self, filepath: Path, tags: list[str], recursive_pattern: str = None) -> None:
         self.HOME = Path.home()
         self.tags = tags
         self.filepath = filepath
+        self.recursive_pattern = recursive_pattern
         self.credentials = {}
         self.auth_headers = {}
         self.config = {}
@@ -30,7 +32,7 @@ class GfycatMassUploader:
                 self.config = json.load(f)
 
     def setup(self) -> None:
-        print("Gfycat Mass Uploader first-time setup. Please provide the following:")
+        print("\nGfycat Mass Uploader first-time setup. Please provide the following:\n")
         config = dict(
             client_id=input("Gfycat API client ID: "),
             client_secret=input("Gfycat API client secret: "),
@@ -43,14 +45,17 @@ class GfycatMassUploader:
 
     def check_valid_files(self) -> None:
         filepath = self.filepath
-        if filepath.is_dir():
-            files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith(".mp4")]
-            files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
+        if self.recursive_pattern:
+            files_to_upload = list(self.filepath.glob(self.recursive_pattern))
         else:
-            files_to_upload = [filepath]
+            if filepath.is_dir():
+                files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith(".mp4")]
+                files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
+            else:
+                files_to_upload = [filepath]
 
-        if len(files_to_upload) == 0:
-            raise FileNotFoundError(f"No valid files found in {str(filepath)}")
+            if len(files_to_upload) == 0:
+                raise FileNotFoundError(f"No valid files found in {str(filepath)}")
         self.files_to_upload = files_to_upload
 
     def token_is_valid(self) -> bool:
@@ -65,13 +70,9 @@ class GfycatMassUploader:
             headers={"Accept": "*/*", "Content-Type": "application/json"},
         )
         if res.status_code != 200:
-            raise Exception(
-                f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}"
-            )
+            raise Exception(f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}")
         self.credentials = res.json()
-        self.auth_headers = {
-            "Authorization": f'Bearer {self.credentials["access_token"]}'
-        }
+        self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
 
     def refresh_token(self) -> None:
         payload = {
@@ -89,16 +90,14 @@ class GfycatMassUploader:
             },
         )
         if res.status_code != 200:
-            print(
+            logger.error(
                 f"Error {res.status_code} when attempting to refresh token:\n{json.dumps(res.json(), indent=2)}"
             )
-            print(f"\nAttempting to fetch new access token...")
+            logger.info(f"\nAttempting to fetch new access token...")
             self.get_access_token()
         else:
             self.credentials = res.json()
-            self.auth_headers = {
-                "Authorization": f'Bearer {self.credentials["access_token"]}'
-            }
+            self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
 
     def file_upload(self, file: Path) -> int:
         if not self.token_is_valid():
@@ -106,13 +105,19 @@ class GfycatMassUploader:
                 self.refresh_token()
             else:
                 self.get_access_token()
+        if self.recursive_pattern:
+            directory_list = list(map(lambda s: s.lower(), str(file).split(file.root)))
+            subdirectory_index = directory_list.index(self.filepath.name.lower())
+            tags = [self.filepath.name.lower(), directory_list[subdirectory_index + 1].lower(), *self.tags]
+        else:
+            tags = self.tags
         res = requests.post(
             f"{BASE_URL}/gfycats",
             headers={**self.auth_headers, "Content-Type": "application/json"},
             data=json.dumps(
                 {
                     "title": file.name,
-                    "tags": self.tags,
+                    "tags": tags,
                     "nsfw": False,
                     "keepAudio": True,
                     "private": False,
@@ -137,7 +142,7 @@ class GfycatMassUploader:
             )
         if res.status_code >= 400:
             os.remove(new_file)
-            print(res.status_code)
+            logger.error(res.status_code)
             return res.status_code
 
         while True:
@@ -160,7 +165,7 @@ class GfycatMassUploader:
 
         res = requests.get(f"{BASE_URL}/me", headers=self.auth_headers)
         if res.status_code >= 400:
-            print(res.status_code)
+            logger.error(res.status_code)
             return
 
         with Pool(NUM_THREADS) as pool:
