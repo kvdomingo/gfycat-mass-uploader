@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pyinstaller -F --clean --name gfycat-mass-upload main.py
+pyinstaller -F --clean --name gfycat-mass-upload build.py

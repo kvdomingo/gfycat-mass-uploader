@@ -3,8 +3,8 @@ from loguru import logger
 from pathlib import Path
 from argparse import ArgumentParser
 from multiprocessing import freeze_support
-from gfymu import GfycatMassUploader
-from gfymu.version import __version__
+from .gfymu import GfycatMassUploader
+from .version import __version__
 
 
 @logger.catch
