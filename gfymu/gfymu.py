@@ -15,11 +15,18 @@ BASE_URL = "https://api.gfycat.com/v1"
 
 
 class GfycatMassUploader:
-    def __init__(self, filepath: Path, tags: list[str], recursive_pattern: str = None) -> None:
+    def __init__(self, filepath: Path, tags: list[str], recursive: bool = False, pattern: str = "") -> None:
+        if recursive and not pattern:
+            raise ValueError("--recursive was passed but no glob --pattern was provided.")
+        if pattern and not recursive:
+            logger.warning("--pattern was provided but --recursive flag was not passed. Assuming recursive.")
+            recursive = True
+
         self.HOME = Path.home()
         self.tags = tags
         self.filepath = filepath
-        self.recursive_pattern = recursive_pattern
+        self.recursive = recursive
+        self.pattern = pattern
         self.credentials = {}
         self.auth_headers = {}
         self.config = {}
@@ -45,8 +52,8 @@ class GfycatMassUploader:
 
     def check_valid_files(self) -> None:
         filepath = self.filepath
-        if self.recursive_pattern:
-            files_to_upload = list(self.filepath.glob(self.recursive_pattern))
+        if self.recursive:
+            files_to_upload = [f for f in self.filepath.glob(self.pattern) if f.name.endswith(".mp4")]
         else:
             if filepath.is_dir():
                 files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith(".mp4")]
@@ -54,8 +61,8 @@ class GfycatMassUploader:
             else:
                 files_to_upload = [filepath]
 
-            if len(files_to_upload) == 0:
-                raise FileNotFoundError(f"No valid files found in {str(filepath)}")
+        if len(files_to_upload) == 0:
+            raise FileNotFoundError(f"No valid files found in {str(filepath)}")
         self.files_to_upload = files_to_upload
 
     def token_is_valid(self) -> bool:
@@ -105,7 +112,7 @@ class GfycatMassUploader:
                 self.refresh_token()
             else:
                 self.get_access_token()
-        if self.recursive_pattern:
+        if self.recursive:
             directory_list = list(map(lambda s: s.lower(), str(file).split(file.root)))
             subdirectory_index = directory_list.index(self.filepath.name.lower())
             tags = [self.filepath.name.lower(), directory_list[subdirectory_index + 1].lower(), *self.tags]

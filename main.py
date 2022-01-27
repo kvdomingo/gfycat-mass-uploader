@@ -14,17 +14,20 @@ def main() -> None:
 
     print(
         f"""
-        ==================================================
-            Gfycat Mass Uploader
-            v{__version__}
-        ==================================================
+==================================================
+    Gfycat Mass Uploader
+    v{__version__}
+==================================================
         """
     )
 
     parser = ArgumentParser()
     parser.add_argument("--configure", action="store_true", help="Re-run first-time setup.")
     parser.add_argument("-t", "--tags", type=str, help="Tags to apply to the GIFs.")
-    parser.add_argument("-r", "--recursive", type=str, help="Search for files recursively given a glob search pattern.")
+    parser.add_argument("-r", "--recursive", action="store_true", help="Search for files to upload recursively.")
+    parser.add_argument(
+        "-p", "--pattern", type=str, help="If the -r flag is passed, search for files given this glob search pattern."
+    )
     parser.add_argument("filepath", metavar="filepath", type=str, help="File/directory path.", nargs="?")
     args = parser.parse_args()
 
@@ -34,8 +37,7 @@ def main() -> None:
         logger.warning("Filepath was not specified, assuming current directory.")
         path = Path.cwd().resolve()
     tags = args.tags.replace(", ", ",").split(",") if args.tags is not None else []
-    recursive_pattern = args.recursive if args.recursive else None
-    gfy = GfycatMassUploader(path, tags, recursive_pattern)
+    gfy = GfycatMassUploader(path, tags, args.recursive, args.pattern)
 
     if args.configure:
         gfy.setup()
