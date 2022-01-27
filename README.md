@@ -1,4 +1,5 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/kvdomingo/gfycat-mass-uploader?style=for-the-badge)
+![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/kvdomingo/gfycat-mass-uploader?include_prereleases&style=for-the-badge)
 
 # Gfycat Mass Uploader
 
