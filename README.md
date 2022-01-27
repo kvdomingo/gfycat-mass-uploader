@@ -40,7 +40,7 @@ pip install -r requirements.txt
 ```
 3. Run using:
 ```cmd
-python main.py -t "<tags, comma-separated>" <path to file or directory>
+python -m gfymu -t "<tags, comma-separated>" <path to file or directory>
 ```
 
 ## Building from source
@@ -50,5 +50,5 @@ pip install -r requirements.dev.txt
 ```
 2. Run:
 ```shell
-pyinstaller --clean -F --name gfycat-mass-upload main.py
+./build.sh
 ```
