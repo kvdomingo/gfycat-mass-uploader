@@ -1,0 +1,18 @@
+version: '3'
+
+tasks:
+  make-builder:
+    cmds:
+      - docker build -t kvdomingo/gfymu-make-linux:latest .
+
+  publish-builder:
+    cmds:
+      - docker push kvdomingo/gfymu-make-linux:latest
+
+  build:
+    cmds:
+      - pyinstaller -F --clean --name gfycat-mass-upload setup.py
+
+  build-linux:
+    cmds:
+      - docker run -v "$(pwd)":/gfymu --rm --name gfymu-makelinux kvdomingo/gfymu-make-linux:latest

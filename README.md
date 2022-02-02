@@ -32,7 +32,7 @@ directory to be uploaded.
 If you are running it for the first time, it will prompt you for the necessary
 config variables.
 
-## Using as script
+## Using as Python module
 1. Clone the repository.
 2. Create a `virtualenv` and install deps:
 ```shell
@@ -50,5 +50,9 @@ pip install -r requirements.dev.txt
 ```
 2. Run:
 ```shell
-./build.sh
+# For Windows on a Windows machine / for Linux on a Linux machine
+task build
+
+# For Linux on a Windows machine using Docker
+task build-linux
 ```
