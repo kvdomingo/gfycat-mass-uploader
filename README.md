@@ -53,6 +53,6 @@ pip install -r requirements.dev.txt
 # For Windows on a Windows machine / for Linux on a Linux machine
 task build
 
-# For Linux on a Windows machine using Docker
-task build-linux
+# For Windows + Linux on a Windows machine using Docker
+task build-all
 ```

@@ -2,12 +2,13 @@ import os
 import json
 import shutil
 import requests
-from loguru import logger
-from multiprocessing import Pool, cpu_count
+from requests.adapters import Retry, HTTPAdapter
 from requests_toolbelt import MultipartEncoder
-from time import sleep
-from pathlib import Path
+from multiprocessing import Pool, cpu_count
 from getpass import getpass
+from loguru import logger
+from pathlib import Path
+from time import sleep
 from tqdm import tqdm
 
 NUM_THREADS = cpu_count()
@@ -118,7 +119,10 @@ class GfycatMassUploader:
             tags = [self.filepath.name.lower(), directory_list[subdirectory_index + 1].lower(), *self.tags]
         else:
             tags = self.tags
-        res = requests.post(
+        sess = requests.Session()
+        retries = Retry(total=100, backoff_factor=0.1)
+        sess.mount("https://", HTTPAdapter(max_retries=retries))
+        res = sess.post(
             f"{BASE_URL}/gfycats",
             headers={**self.auth_headers, "Content-Type": "application/json"},
             data=json.dumps(
@@ -177,5 +181,5 @@ class GfycatMassUploader:
 
         with Pool(NUM_THREADS) as pool:
             with tqdm(total=len(files_to_upload)) as pbar:
-                for i, _ in pool.imap_unordered(self.file_upload, files_to_upload):
+                for _ in pool.imap_unordered(self.file_upload, files_to_upload):
                     pbar.update()

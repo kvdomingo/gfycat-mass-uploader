@@ -2,17 +2,22 @@ version: '3'
 
 tasks:
   make-builder:
+    desc: Make builder image
     cmds:
       - docker build -t kvdomingo/gfymu-make-linux:latest .
 
   publish-builder:
+    desc: Push builder image to Docker Hub
     cmds:
       - docker push kvdomingo/gfymu-make-linux:latest
 
   build:
+    desc: Build standalone executable
     cmds:
       - pyinstaller -F --clean --name gfycat-mass-upload setup.py
 
-  build-linux:
+  build-all:
+    desc: Build standalone executables for Windows and Linux
     cmds:
+      - pyinstaller -F --clean --name gfycat-mass-upload setup.py
       - docker run -v "$(pwd)":/gfymu --rm --name gfymu-makelinux kvdomingo/gfymu-make-linux:latest
