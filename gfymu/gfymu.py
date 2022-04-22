@@ -1,6 +1,6 @@
 import os
+import io
 import json
-import shutil
 import requests
 from requests.adapters import Retry, HTTPAdapter
 from requests_toolbelt import MultipartEncoder
@@ -136,14 +136,15 @@ class GfycatMassUploader:
             ),
         )
         metadata = res.json()
-        new_file = file.parent / metadata["gfyname"]
-        shutil.copy2(file, new_file)
 
-        with open(new_file, "rb") as f:
+        with open(file, "rb") as f:
+            new_file = io.BytesIO(f.read())
+            new_file.name = metadata["gfyname"]
+            new_file.seek(0)
             m = MultipartEncoder(
                 fields={
                     "key": metadata["gfyname"],
-                    "file": (metadata["gfyname"], f, "video/mp4"),
+                    "file": (metadata["gfyname"], new_file, "video/mp4"),
                 }
             )
             res = requests.post(
@@ -152,7 +153,6 @@ class GfycatMassUploader:
                 headers={"Content-Type": m.content_type},
             )
         if res.status_code >= 400:
-            os.remove(new_file)
             logger.error(res.status_code)
             return res.status_code
 
@@ -162,7 +162,6 @@ class GfycatMassUploader:
             if status["task"].lower() in ["notfoundo", "encoding"]:
                 sleep(3)
                 continue
-            os.remove(new_file)
             break
         return status
 
