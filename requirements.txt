@@ -1,5 +1,0 @@
-loguru
-requests
-requests-toolbelt
-semver
-tqdm

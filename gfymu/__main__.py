@@ -1,10 +1,12 @@
 import sys
-from loguru import logger
-from pathlib import Path
 from argparse import ArgumentParser
 from multiprocessing import freeze_support
-from .gfymu import GfycatMassUploader
+from pathlib import Path
+
+from loguru import logger
+
 from . import __version__
+from .gfymu import GfycatMassUploader
 
 
 @logger.catch
@@ -16,10 +18,7 @@ def main() -> None:
     parser.add_argument("--configure", action="store_true", help="Re-run first-time setup.")
     parser.add_argument("-v", "--version", action="store_true", help="Show program version.")
     parser.add_argument("-t", "--tags", type=str, help="Tags to apply to the GIFs.")
-    parser.add_argument("-r", "--recursive", action="store_true", help="Search for files to upload recursively.")
-    parser.add_argument(
-        "-p", "--pattern", type=str, help="If the -r flag is passed, search for files given this glob search pattern."
-    )
+    parser.add_argument("-p", "--pattern", type=str, help="Search for files given this glob search pattern.")
     parser.add_argument("filepath", metavar="filepath", type=str, help="File/directory path.", nargs="?")
     args = parser.parse_args()
 
@@ -32,7 +31,7 @@ def main() -> None:
     else:
         path = Path.cwd().resolve()
     tags = args.tags.replace(", ", ",").split(",") if args.tags is not None else []
-    gfy = GfycatMassUploader(path, tags, args.recursive, args.pattern)
+    gfy = GfycatMassUploader(path, tags, args.pattern)
 
     if args.version:
         print(__version__)
@@ -44,7 +43,7 @@ def main() -> None:
         Gfycat Mass Uploader
         v{__version__}
     ==================================================
-            """
+        """
     )
 
     if args.configure:

@@ -1,23 +1,11 @@
 version: '3'
 
+env:
+  NAME: gfycat-mass-upload
+
 tasks:
-  make-builder:
-    desc: Make builder image
-    cmds:
-      - docker build -t kvdomingo/gfymu-make-linux:latest .
-
-  publish-builder:
-    desc: Push builder image to Docker Hub
-    cmds:
-      - docker push kvdomingo/gfymu-make-linux:latest
-
-  build:
-    desc: Build standalone executable
-    cmds:
-      - pyinstaller -F --clean --name gfycat-mass-upload setup.py
-
-  build-all:
+  default:
     desc: Build standalone executables for Windows and Linux
     cmds:
-      - pyinstaller -F --clean --name gfycat-mass-upload setup.py
-      - docker run -v "$(pwd)":/gfymu --rm --name gfymu-makelinux kvdomingo/gfymu-make-linux:latest
+      - pyinstaller -F --clean --name {{.NAME}} setup.py
+      - docker run -v "$(pwd)":/build --rm --env NAME={{.NAME}} --name gfymu-build-linux --workdir /build kvdomingo/py-cli-builder:latest

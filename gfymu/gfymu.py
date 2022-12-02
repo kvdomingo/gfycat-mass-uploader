@@ -1,14 +1,15 @@
-import os
 import io
 import json
-import requests
-from requests.adapters import Retry, HTTPAdapter
-from requests_toolbelt import MultipartEncoder
-from multiprocessing import Pool, cpu_count
+import os
 from getpass import getpass
-from loguru import logger
+from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from time import sleep
+
+import requests
+from loguru import logger
+from requests.adapters import HTTPAdapter, Retry
+from requests_toolbelt import MultipartEncoder
 from tqdm import tqdm
 
 NUM_THREADS = cpu_count()
@@ -16,17 +17,11 @@ BASE_URL = "https://api.gfycat.com/v1"
 
 
 class GfycatMassUploader:
-    def __init__(self, filepath: Path, tags: list[str], recursive: bool = False, pattern: str = "") -> None:
-        if recursive and not pattern:
-            raise ValueError("--recursive was passed but no glob --pattern was provided.")
-        if pattern and not recursive:
-            logger.warning("--pattern was provided but --recursive flag was not passed. Assuming recursive.")
-            recursive = True
-
+    def __init__(self, filepath: Path, tags: list[str], pattern: str = "") -> None:
         self.HOME = Path.home()
         self.tags = tags
         self.filepath = filepath
-        self.recursive = recursive
+        self.recursive = bool(pattern)
         self.pattern = pattern
         self.credentials = {}
         self.auth_headers = {}
