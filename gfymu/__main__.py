@@ -22,8 +22,12 @@ def main() -> None:
     parser.add_argument("filepath", metavar="filepath", type=str, help="File/directory path.", nargs="?")
     args = parser.parse_args()
 
-    if not len(sys.argv) > 1:
+    if len(sys.argv) <= 1:
         parser.print_help()
+        return
+
+    if args.version:
+        print(__version__)
         return
 
     if args.filepath:
@@ -32,10 +36,6 @@ def main() -> None:
         path = Path.cwd().resolve()
     tags = args.tags.replace(", ", ",").split(",") if args.tags is not None else []
     gfy = GfycatMassUploader(path, tags, args.pattern)
-
-    if args.version:
-        print(__version__)
-        return
 
     print(
         f"""

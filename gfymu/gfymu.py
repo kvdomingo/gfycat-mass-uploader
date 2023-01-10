@@ -27,6 +27,7 @@ class GfycatMassUploader:
         self.auth_headers = {}
         self.config = {}
         self.files_to_upload = []
+        self.uploaded_slugs = []
 
         if ".gfymuconfig" not in os.listdir(self.HOME):
             self.setup()
@@ -38,7 +39,7 @@ class GfycatMassUploader:
         print("\nGfycat Mass Uploader first-time setup. Please provide the following:\n")
         config = dict(
             client_id=input("Gfycat API client ID: "),
-            client_secret=input("Gfycat API client secret: "),
+            client_secret=getpass("Gfycat API client secret: "),
             username=input("Gfycat username: "),
             password=getpass("Gfycat API password: "),
         )
@@ -102,7 +103,7 @@ class GfycatMassUploader:
             self.credentials = res.json()
             self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
 
-    def file_upload(self, file: Path) -> int:
+    def file_upload(self, file: Path) -> str | None:
         if not self.token_is_valid():
             if self.credentials.get("refresh_token"):
                 self.refresh_token()
@@ -149,7 +150,7 @@ class GfycatMassUploader:
             )
         if res.status_code >= 400:
             logger.error(res.status_code)
-            return res.status_code
+            return None
 
         while True:
             res = requests.get(f'{BASE_URL}/gfycats/fetch/status/{metadata["gfyname"]}')
@@ -157,8 +158,10 @@ class GfycatMassUploader:
             if status["task"].lower() in ["notfoundo", "encoding"]:
                 sleep(3)
                 continue
+            if res.ok:
+                return f"https://gfycat.com/{metadata['gfyname']}"
             break
-        return status
+        return None
 
     def main(self) -> None:
         files_to_upload = self.files_to_upload
@@ -175,5 +178,8 @@ class GfycatMassUploader:
 
         with Pool(NUM_THREADS) as pool:
             with tqdm(total=len(files_to_upload)) as pbar:
-                for _ in pool.imap_unordered(self.file_upload, files_to_upload):
+                for status in pool.imap_unordered(self.file_upload, files_to_upload):
+                    if status is not None:
+                        self.uploaded_slugs.append(status)
                     pbar.update()
+        print("\n", *self.uploaded_slugs, sep="\n")
