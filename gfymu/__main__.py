@@ -15,11 +15,36 @@ def main() -> None:
         freeze_support()
 
     parser = ArgumentParser()
-    parser.add_argument("--configure", action="store_true", help="Re-run first-time setup.")
-    parser.add_argument("-v", "--version", action="store_true", help="Show program version.")
-    parser.add_argument("-t", "--tags", type=str, help="Tags to apply to the GIFs.")
-    parser.add_argument("-p", "--pattern", type=str, help="Search for files given this glob search pattern.")
-    parser.add_argument("filepath", metavar="filepath", type=str, help="File/directory path.", nargs="?")
+    parser.add_argument(
+        "--configure",
+        action="store_true",
+        help="Re-run first-time setup.",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="store_true",
+        help="Show program version.",
+    )
+    parser.add_argument(
+        "-t",
+        "--tags",
+        type=str,
+        help="Tags to apply to the GIFs.",
+    )
+    parser.add_argument(
+        "-p",
+        "--pattern",
+        type=str,
+        help="Search for files given this glob search pattern.",
+    )
+    parser.add_argument(
+        "filepath",
+        metavar="filepath",
+        type=str,
+        help="File/directory path.",
+        nargs="?",
+    )
     args = parser.parse_args()
 
     if len(sys.argv) <= 1:

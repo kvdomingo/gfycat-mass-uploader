@@ -36,7 +36,9 @@ class GfycatMassUploader:
                 self.config = json.load(f)
 
     def setup(self) -> None:
-        print("\nGfycat Mass Uploader first-time setup. Please provide the following:\n")
+        print(
+            "\nGfycat Mass Uploader first-time setup. Please provide the following:\n"
+        )
         config = dict(
             client_id=input("Gfycat API client ID: "),
             client_secret=getpass("Gfycat API client secret: "),
@@ -50,10 +52,14 @@ class GfycatMassUploader:
     def check_valid_files(self) -> None:
         filepath = self.filepath
         if self.recursive:
-            files_to_upload = [f for f in self.filepath.glob(self.pattern) if f.name.endswith(".mp4")]
+            files_to_upload = [
+                f for f in self.filepath.glob(self.pattern) if f.name.endswith(".mp4")
+            ]
         else:
             if filepath.is_dir():
-                files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith(".mp4")]
+                files_to_upload = [
+                    fp for fp in os.listdir(filepath) if fp.endswith(".mp4")
+                ]
                 files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
             else:
                 files_to_upload = [filepath]
@@ -74,9 +80,13 @@ class GfycatMassUploader:
             headers={"Accept": "*/*", "Content-Type": "application/json"},
         )
         if res.status_code != 200:
-            raise Exception(f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}")
+            raise Exception(
+                f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}"
+            )
         self.credentials = res.json()
-        self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
+        self.auth_headers = {
+            "Authorization": f'Bearer {self.credentials["access_token"]}'
+        }
 
     def refresh_token(self) -> None:
         payload = {
@@ -97,11 +107,13 @@ class GfycatMassUploader:
             logger.error(
                 f"Error {res.status_code} when attempting to refresh token:\n{json.dumps(res.json(), indent=2)}"
             )
-            logger.info(f"\nAttempting to fetch new access token...")
+            logger.info("\nAttempting to fetch new access token...")
             self.get_access_token()
         else:
             self.credentials = res.json()
-            self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
+            self.auth_headers = {
+                "Authorization": f'Bearer {self.credentials["access_token"]}'
+            }
 
     def file_upload(self, file: Path) -> str | None:
         if not self.token_is_valid():
@@ -112,7 +124,11 @@ class GfycatMassUploader:
         if self.recursive:
             directory_list = list(map(lambda s: s.lower(), str(file).split(file.root)))
             subdirectory_index = directory_list.index(self.filepath.name.lower())
-            tags = [self.filepath.name.lower(), directory_list[subdirectory_index + 1].lower(), *self.tags]
+            tags = [
+                self.filepath.name.lower(),
+                directory_list[subdirectory_index + 1].lower(),
+                *self.tags,
+            ]
         else:
             tags = self.tags
         sess = requests.Session()
