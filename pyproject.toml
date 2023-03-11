@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gfycat-mass-uploader"
-version = "0.5.1"
+version = "1.0.0"
 description = "A small utility to quickly upload all GIFs in a directory to Gfycat and attach the same set of tags to all of them (no more manual tagging dozens of GIFs!)"
 authors = ["Kenneth V. Domingo <hello@kvdomingo.xyz>"]
 
