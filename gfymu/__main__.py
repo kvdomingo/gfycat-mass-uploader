@@ -5,8 +5,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from . import __version__
-from .gfymu import GfycatMassUploader
+from gfymu import __version__
+from gfymu.gfymu import GfycatMassUploader
 
 
 @logger.catch
