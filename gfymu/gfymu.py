@@ -70,7 +70,7 @@ class GfycatMassUploader:
 
     def token_is_valid(self) -> bool:
         res = requests.get(f"{BASE_URL}/me", headers=self.auth_headers)
-        return res.status_code == 200
+        return res.ok
 
     def get_access_token(self) -> None:
         payload = {**self.config, "grant_type": "password"}
@@ -79,7 +79,7 @@ class GfycatMassUploader:
             data=json.dumps(payload),
             headers={"Accept": "*/*", "Content-Type": "application/json"},
         )
-        if res.status_code != 200:
+        if not res.ok:
             raise Exception(
                 f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}"
             )
@@ -103,7 +103,7 @@ class GfycatMassUploader:
                 "Content-Type": "application/json",
             },
         )
-        if res.status_code != 200:
+        if not res.ok:
             logger.error(
                 f"Error {res.status_code} when attempting to refresh token:\n{json.dumps(res.json(), indent=2)}"
             )
@@ -164,7 +164,7 @@ class GfycatMassUploader:
                 data=m,
                 headers={"Content-Type": m.content_type},
             )
-        if res.status_code >= 400:
+        if not res.ok:
             logger.error(res.status_code)
             return None
 
@@ -188,7 +188,7 @@ class GfycatMassUploader:
                 self.get_access_token()
 
         res = requests.get(f"{BASE_URL}/me", headers=self.auth_headers)
-        if res.status_code >= 400:
+        if not res.ok:
             logger.error(res.status_code)
             return
 
