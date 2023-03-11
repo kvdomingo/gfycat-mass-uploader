@@ -36,7 +36,7 @@ class GfycatMassUploader:
                 self.config = json.load(f)
 
     def setup(self) -> None:
-        print(
+        logger.info(
             "\nGfycat Mass Uploader first-time setup. Please provide the following:\n"
         )
         config = dict(
@@ -198,4 +198,5 @@ class GfycatMassUploader:
                     if status is not None:
                         self.uploaded_slugs.append(status)
                     pbar.update()
-        print("\n", *self.uploaded_slugs, sep="\n")
+        for i in range(0, len(self.uploaded_slugs), 5):
+            print("\n", *self.uploaded_slugs[i : i + 5], sep="\n")
