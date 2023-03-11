@@ -36,7 +36,9 @@ class GfycatMassUploader:
                 self.config = json.load(f)
 
     def setup(self) -> None:
-        print("\nGfycat Mass Uploader first-time setup. Please provide the following:\n")
+        logger.info(
+            "\nGfycat Mass Uploader first-time setup. Please provide the following:\n"
+        )
         config = dict(
             client_id=input("Gfycat API client ID: "),
             client_secret=getpass("Gfycat API client secret: "),
@@ -50,10 +52,14 @@ class GfycatMassUploader:
     def check_valid_files(self) -> None:
         filepath = self.filepath
         if self.recursive:
-            files_to_upload = [f for f in self.filepath.glob(self.pattern) if f.name.endswith(".mp4")]
+            files_to_upload = [
+                f for f in self.filepath.glob(self.pattern) if f.name.endswith(".mp4")
+            ]
         else:
             if filepath.is_dir():
-                files_to_upload = [fp for fp in os.listdir(filepath) if fp.endswith(".mp4")]
+                files_to_upload = [
+                    fp for fp in os.listdir(filepath) if fp.endswith(".mp4")
+                ]
                 files_to_upload = list(map(lambda p: filepath / p, files_to_upload))
             else:
                 files_to_upload = [filepath]
@@ -64,7 +70,7 @@ class GfycatMassUploader:
 
     def token_is_valid(self) -> bool:
         res = requests.get(f"{BASE_URL}/me", headers=self.auth_headers)
-        return res.status_code == 200
+        return res.ok
 
     def get_access_token(self) -> None:
         payload = {**self.config, "grant_type": "password"}
@@ -73,10 +79,14 @@ class GfycatMassUploader:
             data=json.dumps(payload),
             headers={"Accept": "*/*", "Content-Type": "application/json"},
         )
-        if res.status_code != 200:
-            raise Exception(f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}")
+        if not res.ok:
+            raise Exception(
+                f"Error {res.status_code}:\n{json.dumps(res.json(), indent=2)}"
+            )
         self.credentials = res.json()
-        self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
+        self.auth_headers = {
+            "Authorization": f'Bearer {self.credentials["access_token"]}'
+        }
 
     def refresh_token(self) -> None:
         payload = {
@@ -93,15 +103,17 @@ class GfycatMassUploader:
                 "Content-Type": "application/json",
             },
         )
-        if res.status_code != 200:
+        if not res.ok:
             logger.error(
                 f"Error {res.status_code} when attempting to refresh token:\n{json.dumps(res.json(), indent=2)}"
             )
-            logger.info(f"\nAttempting to fetch new access token...")
+            logger.info("\nAttempting to fetch new access token...")
             self.get_access_token()
         else:
             self.credentials = res.json()
-            self.auth_headers = {"Authorization": f'Bearer {self.credentials["access_token"]}'}
+            self.auth_headers = {
+                "Authorization": f'Bearer {self.credentials["access_token"]}'
+            }
 
     def file_upload(self, file: Path) -> str | None:
         if not self.token_is_valid():
@@ -112,7 +124,11 @@ class GfycatMassUploader:
         if self.recursive:
             directory_list = list(map(lambda s: s.lower(), str(file).split(file.root)))
             subdirectory_index = directory_list.index(self.filepath.name.lower())
-            tags = [self.filepath.name.lower(), directory_list[subdirectory_index + 1].lower(), *self.tags]
+            tags = [
+                self.filepath.name.lower(),
+                directory_list[subdirectory_index + 1].lower(),
+                *self.tags,
+            ]
         else:
             tags = self.tags
         sess = requests.Session()
@@ -148,7 +164,7 @@ class GfycatMassUploader:
                 data=m,
                 headers={"Content-Type": m.content_type},
             )
-        if res.status_code >= 400:
+        if not res.ok:
             logger.error(res.status_code)
             return None
 
@@ -172,7 +188,7 @@ class GfycatMassUploader:
                 self.get_access_token()
 
         res = requests.get(f"{BASE_URL}/me", headers=self.auth_headers)
-        if res.status_code >= 400:
+        if not res.ok:
             logger.error(res.status_code)
             return
 
@@ -182,4 +198,5 @@ class GfycatMassUploader:
                     if status is not None:
                         self.uploaded_slugs.append(status)
                     pbar.update()
-        print("\n", *self.uploaded_slugs, sep="\n")
+        for i in range(0, len(self.uploaded_slugs), 5):
+            print("\n", *self.uploaded_slugs[i : i + 5], sep="\n")
