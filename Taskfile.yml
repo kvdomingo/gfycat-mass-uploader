@@ -9,3 +9,10 @@ tasks:
     cmds:
       - pyinstaller -F --clean --name {{.NAME}} setup.py
       - docker run -v "$(pwd)":/build --rm --env NAME={{.NAME}} --name gfymu-build-linux --workdir /build kvdomingo/py-cli-builder:latest
+
+  setup:
+    desc: Run initial setup
+    cmds:
+      - pip install pre-commit
+      - pre-commit install
+      - poetry install
